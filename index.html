@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>One Gravity - Rocket Landing Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-image: url('https://blastmkt.com/wp-content/uploads/2018/08/seo-2-slide-1-background-4.jpg');
+            color: #000;
+            font-family: Arial, sans-serif;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: right;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #info p {
+            margin: 5px 0;
+        }
+        
+        #levelDisplay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            text-align: left;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        canvas {
+            display: block;
+        }
+
+        #restartButton,
+        #nextLevelButton {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            display: none;
+            cursor: pointer;
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+        
+        #gameModal {
+            display: block;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        #modalContent {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            color: #000;
+            border-radius: 10px;
+        }
+        
+        #modalContent h2 {
+            text-align: center;
+        }
+        
+        #modalContent ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+        
+        #startButton {
+            display: block;
+            margin: 20px auto 0 auto;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        #logoContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -999;
+        }
+
+        #gameLogo {
+            width: 300px;
+            height: auto;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="logoContainer">
+        <img id="gameLogo" src="og.png" alt="Game Logo">
+    </div>
+
+    <canvas id="simulationCanvas"></canvas>
+    
+    <div id="levelDisplay">
+        <p><strong>Level:</strong> <span id="level">1</span></p>
+        <p><strong>Score:</strong> <span id="totalScore">0</span></p>
+    </div>
+    
+    <div id="info">
+        <p><strong>Gravity Force:</strong> <span id="gravityValue">0</span> m/s²</p>
+        <p><strong>Wind Direction:</strong> <span id="windDirection">0</span></p>
+        <p><strong>Wind Speed:</strong> <span id="windIntensity">0</span> m/s</p>
+        <p><strong>Rocket Angle:</strong> <span id="rocketAngle">0°</span></p>
+        <p><strong>Angular Velocity:</strong> <span id="angularVelocity">0°/s</span></p>
+        <p><strong>Altitude:</strong> <span id="altitude">0</span> m</p>
+        <p><strong>Velocity:</strong> <span id="velocity">0</span> m/s</p>
+        <p><strong>Fuel:</strong> <span id="fuel">1000</span></p>
+        <p><strong>Status:</strong> <span id="landingStatus">Landing...</span></p>
+    </div>
+    
+    <div id="message"></div>
+    <button id="restartButton">Restart</button>
+    <button id="nextLevelButton">Next Level</button>
+    
+    <div id="gameModal">
+        <div id="modalContent">
+            <h2>Falcon 9 Rocket Landing Game</h2>
+            <p><strong>How to Play:</strong></p>
+            <ul>
+                <li><strong>Arrow Keys:</strong> Use left and right arrows to rotate the rocket.</li>
+                <li><strong>Up Arrow / Space:</strong> Activate the main engine to slow down (consumes fuel).</li>
+                <li><strong>L Key:</strong> Deploy landing legs.</li>
+                <li><strong>Goal:</strong> Land the rocket safely on the platform.</li>
+                <li><strong>Difficulty:</strong> Fuel decreases by 50L per level, and wind speed increases.</li>
+            </ul>
+            <p><strong>Scoring:</strong></p>
+            <ul>
+                <li>Points are awarded based on landing speed, angle, angular velocity, and remaining fuel.</li>
+                <li>Total points accumulate until failure.</li>
+            </ul>
+            <p><strong>Rules:</strong></p>
+            <ul>
+                <li>Landing speed must be below 15 m/s.</li>
+                <li>Landing angle must be between -15° and 15°.</li>
+                <li>Angular velocity must be below 15°/s.</li>
+                <li>Landing legs must be deployed to land on the platform.</li>
+                <li>If angular velocity exceeds 100°/s, the rocket will explode.</li>
+            </ul>
+            <button id="startButton">Start</button>
+        </div>
+    </div>
+    
+    <audio id="backgroundMusic" src="https://cdn.pixabay.com/audio/2022/03/09/audio_d5b8225d33.mp3"></audio>
+    <audio id="explosionSound" src="https://cdn.pixabay.com/audio/2024/02/08/audio_b7f03fb030.mp3"></audio>
+    <audio id="applauseSound" src="https://cdn.pixabay.com/audio/2023/10/18/audio_29c8b4314c.mp3"></audio>
+    <audio id="rocketSound" src="https://cdn.pixabay.com/audio/2024/10/22/audio_4ea8695cbf.mp3"></audio>
+    <audio id="boosterSound" src="https://cdn.pixabay.com/audio/2024/10/05/audio_1e824452a9.mp3"></audio>
+    <audio id="wyd" src="https://cdn.pixabay.com/audio/2022/03/24/audio_6ed1b6a367.mp3"></audio>
+<audio id="landingLegsSound" src="https://cdn.pixabay.com/audio/2021/08/09/audio_a823b87433.mp3"></audio>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
